@@ -1,0 +1,127 @@
+---
+title: "Statistical inference course project"
+output:
+  pdf_document: default
+  html_document: default
+Author: Sara Moujahid
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+Part 1: Simulation Exercise Instructions :
+
+In this project you will investigate the exponential distribution in R and compare it with the Central Limit Theorem. The exponential distribution can be simulated in R with rexp(n, lambda) where lambda is the rate parameter.
+Set lambda = 0.2 for all of the simulations. You will investigate the distribution of averages of 40 exponentials. Note that you will need to do a thousand simulations.
+
+Simulating the exponential distribution :
+```{r Exponential Distribution}
+set.seed(16)
+lambda <-0.2
+n <- 40
+sim <- 1000
+#We create 1K times a sample of 40 exponentials, then compute its mean
+exp_dis_sample <- replicate (sim, mean(rexp (n,lambda)))
+```
+
+Calculating the sample mean :
+```{r Sample mean}
+mean(exp_dis_sample)
+```
+Calculating the theoretical mean :
+```{r Theoretical mean}
+1/lambda
+```
+```{r Comparison means}
+##There is a very small difference between the theoretical and sample means of this exponential dsitribution
+abs(mean(exp_dis_sample)-1/lambda)
+```
+Calculating the sample variance :
+```{r Sample var}
+var(exp_dis_sample)
+```
+Calculating the theoretical variance for a population of n:
+```{r theoretical var}
+(1/lambda)^2/n
+```
+
+```{r Comparison vars}
+##There is a very small difference between the theoretical and sample variances of this exponential dsitribution
+abs(var(exp_dis_sample)-(1/lambda)^2/n)
+```
+
+Plotting the distribution, and comparing it to a normal distribution of similar mean and standard deviation :
+```{r Histogram distribution, echo=FALSE}
+#The historgram is roughly symmetric and mound shaped, like a normal distribution due to CLT. The more we increase the sample size, the histogram will resemble more the normal distribution
+hist(exp_dis_sample,prob=TRUE, breaks=40,main='Histogram of avg of 40 Exponentials for 1K simulations',col='red')
+x<-seq(min(exp_dis_sample),max(exp_dis_sample),length=2*n)
+y<-dnorm(x,1/lambda,1/(lambda*sqrt(n)))
+lines(x,y , pch=22, col='black', lwd=2)
+
+```
+
+Part 2: Basic Inferential Data Analysis Instructions :
+
+Now in the second portion of the project, we're going to analyze the ToothGrowth data in the R datasets package.
+
+```{r tootgrowth}
+library(datasets)
+df<-data(ToothGrowth)
+#First rows of the data sets
+head(ToothGrowth)
+#length of the dataset
+dim(ToothGrowth)
+#Some statistics summaries of the dataset's columns
+summary(ToothGrowth)
+# Display different summary
+str(ToothGrowth)
+#Only 3 values for dose
+unique(ToothGrowth$dose)
+
+#Some plots to better understand the data :
+#Transform dose into factors
+ToothGrowth$dose<-as.factor(ToothGrowth$dose)
+#contruct a boxplot
+library(ggplot2)
+ggplot(data = ToothGrowth, aes(x = dose, y = len)) + 
+  geom_boxplot(aes(fill = dose), width = 0.8) + xlab('Dose') + ylab('Tooth length') + facet_grid(~supp) +ggtitle('Tooth Length vs. Doses, by supp')
+```
+
+Calculating confidence intervals :
+
+Hypothesis1 : The supplements offer the same tooth growth
+```{r hyp1}
+
+# Run a t-test on the data
+t.test(len~supp,data=ToothGrowth)
+```
+the p-value is 6%, so higher than 5%, and the confidence interval contains 0. The null hypothesis cannot be rejected.
+
+
+Hypothesis2 : The supplements offer the same tooth growth For the dosage of '0.5mg/day'
+```{r hyp2}
+# Run a t-test on the data for dose .5mg/day
+df<-subset(ToothGrowth,dose==.5)
+t.test(len~supp,data=df)
+```
+the p-value is .6%, so less than 5%, and the confidence interval is higher than 0. So the results are statistically significant and the null hypothesis is rejected. The OJ supp offer more tooth growth than VC.
+
+```{r hyp3}
+# Run a t-test on the data for dose 1mg/day
+df<-subset(ToothGrowth,dose==1)
+t.test(len~supp,data=df)
+```
+the same is true for a dosage of 1mg/day
+
+```{r hyp4}
+# Run a t-test on the data for dose 2mg/day
+df<-subset(ToothGrowth,dose==2)
+t.test(len~supp,data=df)
+```
+Unfortunately for a dosage of 2mg/day, the p-value is very high, and the confidence interval contains 0. So the null hypothesis cannot be rejected.
+
+Conclusion :
+* For the dosages of .5 and 1mg/day, the OJ supplement offers more tooth growth than VC. However, we failed to reject the null hypothesis for the dosage 2mg/day and conclude there is no significant difference between both supplements.
